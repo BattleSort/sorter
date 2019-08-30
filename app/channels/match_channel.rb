@@ -1,23 +1,34 @@
 class MatchChannel < ApplicationCable::Channel
-  PLAYER_NUMBER = 2
+  PLAYER_NUMBER = 3
   # user_idのkeyで生きているかを管理
   # レベルとカテゴリのキーでユーザーを詰めていき、2以上いたら始める
   def subscribed
     stream_from "match" # 全員用
     stream_from "match#{user_id}" #各自用
     REDIS.set(user_id,"alive")
-
+    personal("hello #{user_id}")
     # 対戦サーバーが取り出してマッチングさせてもいいかも
-    if REDIS.lpush(match_room_name, user_id) >= PLAYER_NUMBER
+    num = REDIS.lpush(match_room_name, user_id)
+    if num >= PLAYER_NUMBER
       players = []
       PLAYER_NUMBER.times{players.push(REDIS.rpop(match_room_name))}
-
-      #  TODO: 存在するか調べてもし全員存在しなかった場合は、rpushで右からキューに詰めてあげるほうが親切
-      unless players.all?{|e|REDIS.del(e)==1}
-        return players.each{|e|abort_match(e)}
+      mes("player #{players}")
+      alives, deads = players.partition{|e|REDIS.exists(e)}
+      if alives.size != PLAYER_NUMBER
+        alives.each do |player|
+          personal player
+          REDIS.rpush(match_room_name, player)
+        end
+        deads.each do |player|
+          personal "message #{player}"
+          REDIS.del(player)
+        end
+        return
       end
+
       players.each do |player|
         start_match(player,players.reject{|e|e==player})
+        REDIS.del(player)
       end
     end
   end
@@ -34,6 +45,14 @@ class MatchChannel < ApplicationCable::Channel
 
   def abort_match(owner)
     ActionCable.server.broadcast "match#{owner}", "対戦相手が通信を切断しました"
+  end
+
+  def all(message)
+    ActionCable.server.broadcast "match", message
+  end
+
+  def personal(message)
+    ActionCable.server.broadcast "match#{user_id}", message
   end
 
   def mes(message)
