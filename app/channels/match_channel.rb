@@ -1,10 +1,10 @@
 class MatchChannel < ApplicationCable::Channel
-  PLAYER_NUMBER = 3
+  PLAYER_NUMBER = 2
   # user_idのkeyで生きているかを管理
   # レベルとカテゴリのキーでユーザーを詰めていき、2以上いたら始める
   def subscribed
     stream_from "match" # 全員用
-    stream_from "match#{user_id}" #各自用
+    stream_from user_room(user_id) #各自用
     REDIS.set(user_id,"alive")
     personal("hello #{user_id}")
     # 対戦サーバーが取り出してマッチングさせてもいいかも
@@ -25,9 +25,11 @@ class MatchChannel < ApplicationCable::Channel
         end
         return
       end
-
+      # 部屋の成立
+      room_id = SecureRandom.uuid
+      REDIS.set(room_id, room_hash.merge(count: players.size).to_json)
       players.each do |player|
-        start_match(player,players.reject{|e|e==player})
+        start_match(player,players.reject{|e|e==player},room_id)
         REDIS.del(player)
       end
     end
@@ -38,13 +40,13 @@ class MatchChannel < ApplicationCable::Channel
     REDIS.del(user_id)
   end
 
-  def start_match(owner, opponent)
-    ActionCable.server.broadcast "match#{owner}", "対戦相手が見つかりました#{opponent} room_id: hogehoge"
-
+  def start_match(owner, opponent,room_id)
+    # 受け取りやすいデータ構造で
+    ActionCable.server.broadcast user_room(owner), type: "moveRoom", message: "対戦相手が見つかりました#{opponent}", room_id: room_id
   end
 
   def abort_match(owner)
-    ActionCable.server.broadcast "match#{owner}", "対戦相手が通信を切断しました"
+    ActionCable.server.broadcast user_room(owner), "対戦相手が通信を切断しました"
   end
 
   def all(message)
@@ -52,7 +54,7 @@ class MatchChannel < ApplicationCable::Channel
   end
 
   def personal(message)
-    ActionCable.server.broadcast "match#{user_id}", message
+    ActionCable.server.broadcast user_room(user_id), message
   end
 
   def mes(message)
@@ -63,7 +65,16 @@ class MatchChannel < ApplicationCable::Channel
   def user_id
     params[:user_id].to_s
   end
+  
+  def user_room(user_id)
+    "match#{user_id}"
+  end
+
   def match_room_name
     "#{params[:level]}-#{params[:category]}"
+  end
+
+  def room_hash
+    {level: params[:level], category: params[:category]}
   end
 end
