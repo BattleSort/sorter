@@ -6,6 +6,8 @@ class RoomChannel < ApplicationCable::Channel
     stream_from user_channel # ユーザーと1on1
 
     # TODO: 全員集まったら部屋を消す感じにしてるけど、リロードしたときに死ぬから、room_id、user_idの一致で問題を再配信するくらいの親切さがほしい。
+    # 実装としては部屋情報がなければ次に進む。あればそれを返すって感じかな。誰が何を解いたかも含めて上げる必要がある。
+    # 問題と、各ユーザーが解いた問題の集合を渡す
     return unless REDIS.get(params[:room_id]) #既に揃っていたら何もしない
     # レディスでカウントして全員揃ったら問題配信か
     pp room_info
@@ -30,7 +32,7 @@ class RoomChannel < ApplicationCable::Channel
 
     # 提出済みkeyが残っていたら弾く
     if REDIS.get(user_delay_key).present? 
-      ActionCable.server.broadcast user_channel, message: "10秒以内に再提出はできません", type: "penalty"
+      ActionCable.server.broadcast user_channel, message: "#{WRONG_ANSWER_PENALTY_SECONDS}秒以内に再提出はできません", type: "penalty"
       return
     end
     # 既に解いてたら飛ばす
@@ -41,12 +43,9 @@ class RoomChannel < ApplicationCable::Channel
     end
 
     if REDIS.get(hash["problem_id"]) == hash["answer"]
-      p "hello ac"
       ActionCable.server.broadcast room_channel, message: "#{hash["user_id"]}さんが#{hash["problem_id"]}を解きました", type: "notice"
-      # 解いた問題の集合、saddで重複されないから連続して送信されたとしても大丈夫
       REDIS.sadd(hash["user_id"], hash["problem_id"])
     else
-      p "hello wa"
       ActionCable.server.broadcast user_channel, message: "不正解です", type: "wrong answer"
       REDIS.setex(user_delay_key,WRONG_ANSWER_PENALTY_SECONDS,"wrong")
     end
