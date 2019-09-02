@@ -5,14 +5,15 @@ class RoomChannel < ApplicationCable::Channel
     stream_from room_channel # ルーム内全員
     stream_from user_channel # ユーザーと1on1
 
+    # TODO: 全員集まったら部屋を消す感じにしてるけど、リロードしたときに死ぬから、room_id、user_idの一致で問題を再配信するくらいの親切さがほしい。
     return unless REDIS.get(params[:room_id]) #既に揃っていたら何もしない
     # レディスでカウントして全員揃ったら問題配信か
     pp room_info
     # 全員揃ったら
     # これもワーカーでもできる
-    if REDIS.incr(room_channel).to_i >= room_info[:count]
+    if REDIS.incr(room_incr_key).to_i >= room_info[:count]
       battle_start
-      REDIS.del(room_channel)
+      REDIS.del(room_incr_key)
       REDIS.del(params[:room_id])
     end
   end
@@ -27,16 +28,22 @@ class RoomChannel < ApplicationCable::Channel
     # user_idはparamからとれるか
     raise "何かがおかしい" unless REDIS.get(hash["problem_id"])
 
+    # 提出済みkeyが残っていたら弾く
     if REDIS.get(user_delay_key).present? 
       ActionCable.server.broadcast user_channel, message: "10秒以内に再提出はできません", type: "penalty"
       return
+    end
+    # 既に解いてたら飛ばす
+    if REDIS.ismember(hash["user_id"],hash["problem_id"])
+      # クライアント側で弾くことを期待したい
+      ActionCable.server.broadcast user_channel, message: "提出済みです", type: "already"
     end
 
     if REDIS.get(hash["problem_id"]) == hash["answer"]
       p "hello ac"
       ActionCable.server.broadcast room_channel, message: "#{hash["user_id"]}さんが#{hash["problem_id"]}を解きました", type: "notice"
       # 解いた問題の集合、saddで重複されないから連続して送信されたとしても大丈夫
-      REDIS.sadd(hash["user_id"],hash["problem_id"])
+      REDIS.sadd(hash["user_id"], hash["problem_id"])
     else
       p "hello wa"
       ActionCable.server.broadcast user_channel, message: "不正解です", type: "wrong answer"
@@ -58,6 +65,7 @@ class RoomChannel < ApplicationCable::Channel
     problems = PROBLEM_NUMBER.times.map{Ranking.all.sample.create_problem}
     # problems = [Problem.mock, Problem.mock, Problem.mock, Problem.mock]
     problems.each do |problem|
+      # 問題名とか知りたいし、hashにして保存しておいてもいいかも
       REDIS.set(problem.id, problem.answer)
     end
     
@@ -74,6 +82,10 @@ class RoomChannel < ApplicationCable::Channel
 
   def user_channel
     "user-#{params[:user_id]}"
+  end
+
+  def room_incr_key
+    "room-incr-#{params[:room_id]}"
   end
 
   def user_delay_key
