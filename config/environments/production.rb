@@ -113,4 +113,6 @@ Rails.application.configure do
   # TODO: ガバガバ過ぎ 
   config.action_cable.disable_request_forgery_protection = true
   config.action_cable.allowed_request_origins = [%r{https?://\S+}]
+
+  config.logger = Logist::Logger.new(STDOUT)
 end

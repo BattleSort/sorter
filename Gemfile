@@ -22,6 +22,7 @@ gem 'bootsnap', '>= 1.4.2', require: false
 group :production do
   gem 'thin'
   gem 'foreman'
+  gem 'logist'
   gem 'pg'
 end
 
