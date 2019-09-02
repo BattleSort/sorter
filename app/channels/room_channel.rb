@@ -37,6 +37,7 @@ class RoomChannel < ApplicationCable::Channel
     if REDIS.sismember(hash["user_id"],hash["problem_id"])
       # クライアント側で弾くことを期待したい
       ActionCable.server.broadcast user_channel, message: "提出済みです", type: "already"
+      return
     end
 
     if REDIS.get(hash["problem_id"]) == hash["answer"]
