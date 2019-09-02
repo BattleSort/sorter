@@ -24,14 +24,13 @@ class RoomChannel < ApplicationCable::Channel
   def submit(hash)
     # TODO: user_idとか推測されないやつにしないと他のユーザーのフリして回答できちゃう
     # TODO: token的なのと照合して操作しないと基本的にガバガバ
-
+    # user_idはparamからとれるか
     raise "何かがおかしい" unless REDIS.get(hash["problem_id"])
 
     if REDIS.get(user_delay_key).present? 
       ActionCable.server.broadcast user_channel, message: "10秒以内に再提出はできません", type: "penalty"
       return
     end
-
 
     if REDIS.get(hash["problem_id"]) == hash["answer"]
       p "hello ac"
@@ -42,6 +41,10 @@ class RoomChannel < ApplicationCable::Channel
       p "hello wa"
       ActionCable.server.broadcast user_channel, message: "不正解です", type: "wrong answer"
       REDIS.setex(user_delay_key,WRONG_ANSWER_PENALTY_SECONDS,"wrong")
+    end
+
+    if REDIS.scard(hash["user_id"]) >= PROBLEM_NUMBER
+      end_battle hash["user_id"]
     end
   end
 
@@ -60,6 +63,11 @@ class RoomChannel < ApplicationCable::Channel
     
     ActionCable.server.broadcast room_channel, message: "試合開始！", problems: problems.map(&:to_client), type: "battleStart"
   end
+
+  def end_battle(user_id)
+    ActionCable.server.broadcast room_channel, message: "#{user_id}さんが全問解きました。試合終了です。", type: "battleEnd", user_id: user_id
+  end
+
   def room_channel
     "room-#{params[:room_id]}"
   end
