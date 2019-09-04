@@ -12,6 +12,7 @@ class RoomQueue
         REDIS.lpush(room_key, user_id)
     end
 
+    # 有効なプレイヤーを返す。内部的には一旦取り出して、切断されていたらならキューの先頭に詰め直している。
     def get_players(player_number)
         players = player_number.times.map{REDIS.rpop(room_key)}
         alives, deads = players.partition{|e|user_enabled?(e)}

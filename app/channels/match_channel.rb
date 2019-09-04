@@ -33,10 +33,6 @@ class MatchChannel < ApplicationCable::Channel
     ActionCable.server.broadcast user_room(owner), type: "moveRoom", message: "対戦相手が見つかりました#{opponent}", room_id: room_id
   end
 
-  def personal(message)
-    ActionCable.server.broadcast user_room(user_id), message
-  end
-
   def user_id
     params[:user_id].to_s
   end
