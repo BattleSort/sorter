@@ -1,5 +1,5 @@
 class Ranking < ApplicationRecord
-    def create_problem(size = 10)
+    def create_problem(size = 8)
         elms = elements.split(',')
         indices = [*0..(elms.size-1)].sample(size).sort
         ordered_elements = elms.values_at(*indices)

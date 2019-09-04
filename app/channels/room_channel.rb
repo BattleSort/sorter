@@ -2,21 +2,33 @@ class RoomChannel < ApplicationCable::Channel
   PROBLEM_NUMBER = 3
   WRONG_ANSWER_PENALTY_SECONDS = 10
   def subscribed
-    stream_from room_channel # ルーム内全員
+    # マッチングしたメンバーであるか確認
+    pp room_info[:players]
     stream_from user_channel # ユーザーと1on1
+
+    unless room_info[:players].include? params[:user_id].to_s
+      # 出さんくてもいいかも
+      ActionCable.server.broadcast user_channel, message: "想定していないユーザーです", type: "error"
+      return
+    end
+
+    stream_from room_channel # ルーム内全員
+
 
     # TODO: 全員集まったら部屋を消す感じにしてるけど、リロードしたときに死ぬから、room_id、user_idの一致で問題を再配信するくらいの親切さがほしい。
     # 実装としては部屋情報がなければ次に進む。あればそれを返すって感じかな。誰が何を解いたかも含めて上げる必要がある。
     # 問題と、各ユーザーが解いた問題の集合を渡す
     return unless REDIS.get(params[:room_id]) #既に揃っていたら何もしない
+
+
     # レディスでカウントして全員揃ったら問題配信か
     pp room_info
     # 全員揃ったら
     # これもワーカーでもできる
-    if REDIS.incr(room_incr_key).to_i >= room_info[:count]
+    if REDIS.incr(room_incr_key).to_i >= room_info[:players].size
       battle_start
       REDIS.del(room_incr_key)
-      REDIS.del(params[:room_id])
+      # REDIS.del(params[:room_id])
     end
   end
 
@@ -46,7 +58,7 @@ class RoomChannel < ApplicationCable::Channel
       ActionCable.server.broadcast room_channel, message: "#{hash["user_id"]}さんが#{hash["problem_id"]}を解きました", type: "notice"
       REDIS.sadd(hash["user_id"], hash["problem_id"])
     else
-      ActionCable.server.broadcast user_channel, message: "不正解です", type: "wrong answer"
+      ActionCable.server.broadcast user_channel, message: "不正解です", type: "wrongAnswer"
       REDIS.setex(user_delay_key,WRONG_ANSWER_PENALTY_SECONDS,"wrong")
     end
 

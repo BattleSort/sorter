@@ -21,9 +21,9 @@ test:
   database: db/test.sqlite3
 
 production:
-#半角スペース２個分の空白を開ける
   <<: *default
   url: <%= ENV['DATABASE_URL'] %>
   adapter: postgresql
   encoding: unicode
+  # TODO: これは適切なんだろうか
   pool: 5

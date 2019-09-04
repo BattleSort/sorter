@@ -27,8 +27,9 @@ class MatchChannel < ApplicationCable::Channel
       end
       # 部屋の成立
       room_id = SecureRandom.uuid
-      REDIS.set(room_id, room_hash.merge(count: players.size).to_json)
+      REDIS.set(room_id, room_hash.merge(players: players).to_json)
       players.each do |player|
+        pp player
         start_match(player,players.reject{|e|e==player},room_id)
         REDIS.del(player)
       end
