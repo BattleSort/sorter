@@ -7,6 +7,8 @@
 # Ignore bundler config.
 /.bundle
 
+vendor/bundle
+
 # Ignore the default SQLite database.
 /db/*.sqlite3
 /db/*.sqlite3-journal
@@ -20,6 +22,9 @@
 # Ignore uploaded files in development.
 /storage/*
 !/storage/.keep
+
+# redis
+dump.rdb
 
 /public/assets
 .byebug_history
