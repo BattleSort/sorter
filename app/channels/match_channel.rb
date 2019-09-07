@@ -7,7 +7,7 @@ class MatchChannel < ApplicationCable::Channel
 
     room_queue = RoomQueue.new(room_key: match_room_name)
 
-    # OPTIMIZE: 対戦サーバーが取り出してマッチングさせてもいいかも
+    # OPTIMIZE: 対戦サーバーが取り出してマッチングさせてもいいかも。
     return if room_queue.push(user_id) < PLAYER_NUMBER
     return unless players = room_queue.get_players(PLAYER_NUMBER)
 
@@ -16,10 +16,11 @@ class MatchChannel < ApplicationCable::Channel
       players: players,
       level: params[:level],
       category: params[:category]
-    )
+    ).save
 
     players.each do |player|
       start_match(player, players.reject{|e|e==player}, room.id)
+      User.new(id: player, problems: []).save
     end
   end
 
