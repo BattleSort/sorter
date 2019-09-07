@@ -18,6 +18,7 @@ gem 'redis'
 # gem 'image_processing', '~> 1.2'
 
 gem 'bootsnap', '>= 1.4.2', require: false
+gem 'newrelic_rpm'
 
 group :production do
   gem 'logist'

@@ -25,6 +25,7 @@ vendor/bundle
 
 # redis
 dump.rdb
+*.sqlite3-*
 
 /public/assets
 .byebug_history
