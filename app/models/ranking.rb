@@ -1,4 +1,8 @@
 class Ranking < ApplicationRecord
+    def self.create_problems(num,size)
+        all.sample(num).map{|e|e.create_problem(size)}
+    end
+
     def create_problem(size = 8)
         elms = elements.split(',')
         indices = [*0..(elms.size-1)].sample(size).sort
@@ -9,8 +13,9 @@ class Ranking < ApplicationRecord
         Problem.new(
             id: SecureRandom.uuid,
             name: name,
+            right_elements: ordered_elements,
             elements: ordered_elements.shuffle,
             answer: answer
-        )
+        ).save
     end
 end
