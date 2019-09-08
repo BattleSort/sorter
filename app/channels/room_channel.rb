@@ -41,7 +41,7 @@ class RoomChannel < ApplicationCable::Channel
 
     # 最初の人のみがdelete==1
     if problem.correct?(hash["answer"]) && problem.delete == 1
-      ActionCable.server.broadcast room_channel, message: "#{hash["user_id"]}さんが「#{problem.name}」を解きました", type: "notice"
+      ActionCable.server.broadcast room_channel, message: "#{params[:user_id]}さんが「#{problem.name}」を解きました", type: "notice"
       user.add_problem(problem) # TODO: socreの計算ロジック
       return if deliver_problem room.pop_problem 
 
