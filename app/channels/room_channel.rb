@@ -1,5 +1,5 @@
 class RoomChannel < ApplicationCable::Channel
-  PROBLEM_NUMBER = 3
+  PROBLEM_NUMBER = 10
   WRONG_ANSWER_PENALTY_SECONDS = 5
   def subscribed
     room = Room.find!(params[:room_id])
