@@ -56,7 +56,7 @@ class RoomChannel < ApplicationCable::Channel
   def deliver_problem(problem_id)
     return nil unless problem_id
     problem = Problem.find!(problem_id)
-    ActionCable.server.broadcast room_channel, message: "問題", problem: problem.to_client, type: "deliverProblem"
+    ActionCable.server.broadcast room_channel, problem: problem.to_client, type: "deliverProblem"
     true
   end
 
