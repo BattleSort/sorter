@@ -1,15 +1,14 @@
 class MatchChannel < ApplicationCable::Channel
-  PLAYER_NUMBER = 2
-
   def subscribed
-    raise "user_idがないってどういうことよ" unless user_id
+    raise "user_idがないってどういうことよ" unless user_id = params[:user_id]
+    raise "player_countがないってどういうこと" unless player_count = params[:player_count]
     stream_from user_room(user_id) #各自用
 
     room_queue = RoomQueue.new(room_key: match_room_name)
 
     # OPTIMIZE: 対戦サーバーが取り出してマッチングさせてもいいかも。
-    return if room_queue.push(user_id) < PLAYER_NUMBER
-    return unless players = room_queue.get_players(PLAYER_NUMBER)
+    return if room_queue.push(user_id) < player_count
+    return unless players = room_queue.get_players(player_count)
 
     # 部屋の成立 ここらへんYAGNIな気も
     room = Room.new(
@@ -25,7 +24,7 @@ class MatchChannel < ApplicationCable::Channel
   end
 
   def unsubscribed
-    RoomQueue.new(room_key: match_room_name).disable_user(user_id)
+    RoomQueue.new(room_key: match_room_name).disable_user(params[:user_id])
   end 
 
   private
@@ -33,16 +32,12 @@ class MatchChannel < ApplicationCable::Channel
   def start_match(owner, opponent,room_id)
     ActionCable.server.broadcast user_room(owner), type: "moveRoom", message: "対戦相手が見つかりました#{opponent}", room_id: room_id
   end
-
-  def user_id
-    params[:user_id].to_s
-  end
   
   def user_room(user_id)
     "match#{user_id}"
   end
 
   def match_room_name
-    "#{params[:level]}-#{params[:category]}"
+    "#{params[:level]}-#{params[:category]}-#{params[:player_count]}"
   end
 end
