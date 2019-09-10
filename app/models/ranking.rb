@@ -1,6 +1,10 @@
 class Ranking < ApplicationRecord
-    def self.create_problems(num,size)
-        all.sample(num).map{|e|e.create_problem(size)}
+    has_many :category_rankings, dependent: :destroy
+    
+    def self.create_problems(num,size,category_id)
+        # FIXME: これでいいんやろか
+        category = Category.find(category_id)
+        category.rankings.order("RANDOM()").limit(num).map{|e|e.create_problem(size)}
     end
 
     def create_problem(size = 8)
