@@ -16,7 +16,7 @@ class RoomChannel < ApplicationCable::Channel
 
     # TODO: カテゴリに合ったランキングを取得する仕組み allじゃなくてidで絞り込む実装
     # NOTE: 各問題の要素数、だんだん増えていくと競技として面白そう。
-    room.problem_ids = Ranking.create_problems(PROBLEM_NUMBER, room.level*4).map(&:id)
+    room.problem_ids = Ranking.create_problems(PROBLEM_NUMBER, room.level*4, room.category).map(&:id)
     deliver_problem room.pop_problem
   rescue StandardError => e
     ActionCable.server.broadcast user_channel, message: e unless Rails.env.production?

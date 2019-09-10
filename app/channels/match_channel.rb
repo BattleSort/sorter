@@ -2,6 +2,8 @@ class MatchChannel < ApplicationCable::Channel
   def subscribed
     raise "user_idがないってどういうことよ" unless user_id = params[:user_id]
     raise "player_countがないってどういうこと" unless player_count = params[:player_count]
+    raise "categoryがないってどういうこと" unless category = params[:category].to_i
+
     stream_from user_room(user_id) #各自用
 
     room_queue = RoomQueue.new(room_key: match_room_name)
@@ -14,7 +16,7 @@ class MatchChannel < ApplicationCable::Channel
     room = Room.new(
       players: players,
       level: params[:level],
-      category: params[:category]
+      category: category
     ).save
 
     players.each do |player|
