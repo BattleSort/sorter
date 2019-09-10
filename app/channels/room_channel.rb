@@ -19,7 +19,7 @@ class RoomChannel < ApplicationCable::Channel
     room.problem_ids = Ranking.create_problems(PROBLEM_NUMBER, room.level*4, room.category).map(&:id)
     deliver_problem room.pop_problem
   rescue StandardError => e
-    ActionCable.server.broadcast user_channel, message: e unless Rails.env.production?
+    ActionCable.server.broadcast user_channel, message: e if Rails.env.development?
     raise e
   end
 
