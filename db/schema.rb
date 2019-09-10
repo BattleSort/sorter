@@ -10,7 +10,22 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema.define(version: 2019_08_31_104500) do
+ActiveRecord::Schema.define(version: 2019_09_10_092658) do
+
+  create_table "categories", force: :cascade do |t|
+    t.string "name"
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+  end
+
+  create_table "category_rankings", force: :cascade do |t|
+    t.integer "category_id", null: false
+    t.integer "ranking_id", null: false
+    t.datetime "created_at", precision: 6, null: false
+    t.datetime "updated_at", precision: 6, null: false
+    t.index ["category_id"], name: "index_category_rankings_on_category_id"
+    t.index ["ranking_id"], name: "index_category_rankings_on_ranking_id"
+  end
 
   create_table "rankings", force: :cascade do |t|
     t.string "name"
@@ -20,4 +35,6 @@ ActiveRecord::Schema.define(version: 2019_08_31_104500) do
     t.datetime "updated_at", precision: 6, null: false
   end
 
+  add_foreign_key "category_rankings", "categories"
+  add_foreign_key "category_rankings", "rankings"
 end
