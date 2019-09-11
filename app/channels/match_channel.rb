@@ -6,22 +6,23 @@ class MatchChannel < ApplicationCable::Channel
 
     stream_from user_room(user_id) #各自用
 
+    # FIXME: RoomQueueは人数に関心を持つべき。
     room_queue = RoomQueue.new(room_key: match_room_name)
 
     # OPTIMIZE: 対戦サーバーが取り出してマッチングさせてもいいかも。
     return if room_queue.push(user_id) < player_count
-    return unless players = room_queue.get_players(player_count)
+    return unless user_ids = room_queue.get_players(player_count)
 
     # 部屋の成立 ここらへんYAGNIな気も
     room = Room.new(
-      players: players,
+      user_ids: user_ids,
       level: params[:level],
       category: category
     ).save
 
-    players.each do |player|
-      start_match(player, players.reject{|e|e==player}, room.id)
-      User.new(id: player, problems: []).save
+    user_ids.each do |user_id|
+      start_match(user_id, user_ids.reject{|e|e==user_id}, room.id)
+      User.new(id: user_id, problems: []).save
     end
   end
 
