@@ -1,7 +1,7 @@
 class Room < ApplicationRedis
-    attr_accessor :players, :level, :category, :problem_ids
+    attr_accessor :user_ids, :level, :category, :problem_ids
     def initialize(h)
-        self.players = h[:players]
+        self.user_ids = h[:user_ids]
         self.level = h[:level]
         self.category = h[:category]
         self.id = h[:id] || SecureRandom.uuid
@@ -9,12 +9,12 @@ class Room < ApplicationRedis
     end
 
     def join!(user_id)
-        raise "想定外のユーザー" unless players.include? user_id
-        REDIS.sadd(room_players_key, user_id)
+        raise "想定外のユーザー" unless user_ids.include? user_id
+        REDIS.sadd(room_user_ids_key, user_id)
     end
 
     def match?
-        REDIS.scard(room_players_key) == players.size
+        REDIS.scard(room_user_ids_key) == user_ids.size
     end
 
     def can_start?
@@ -26,40 +26,39 @@ class Room < ApplicationRedis
         end
     end
 
-    def can_submit?(user_id)
-        REDIS.get(user_delay_key(user_id)).blank?
+    def can_submit?(user_id,problems_id)
+        REDIS.get(user_delay_key(user_id,problems_id)).blank?
     end
 
-    def disable_submit(user_id,sec)
-        REDIS.setex(user_delay_key(user_id),sec,"wrong")
+    def disable_submit(user_id,problems_id,sec)
+        REDIS.setex(user_delay_key(user_id,problems_id),sec,"wrong")
     end
 
     def result
-        players.map{|e|{
+        user_ids.map{|e|{
             id: e,
             problems: User.find!(e).problems,
             score: User.find!(e).problems.size
-        }}.tap{|e|pp e}.sort{|a,b|
+        }}.sort{|a,b|
             b[:score] - a[:score]
         }
     end
 
     def pop_problem
-        tmp = self.problem_ids.shift
+        tmp = problem_ids.shift
         save and tmp
     end
 
     private
-    def room_players_key
-        "room-players-#{id}"
+    def room_user_ids_key
+        "room-user_ids-#{id}"
     end
 
     def room_status_key
         "room-status-#{id}"
     end
 
-
-    def user_delay_key(user_id)
-        "user-delay-#{user_id}"
+    def user_delay_key(user_id, problems_id)
+        "user-delay-#{user_id}-#{problems_id}"
     end
 end
