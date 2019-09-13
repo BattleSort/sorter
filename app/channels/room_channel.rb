@@ -55,12 +55,13 @@ class RoomChannel < ApplicationCable::Channel
       ActionCable.server.broadcast(
         user_channel,
         message: "#{WRONG_ANSWER_PENALTY_SECONDS}秒以内に再提出はできません",
-        type: 'penalty'
+        type: 'penalty',
+        ttl_ms: problem.remain_milliseconds
       ) && return
     end
 
     unless problem.correct?(hash['answer'])
-      ActionCable.server.broadcast user_channel, message: '不正解です', type: 'wrongAnswer'
+      ActionCable.server.broadcast user_channel, message: '不正解です', type: 'wrongAnswer', ttl_ms: problem.remain_milliseconds
       @room.disable_submit(user.id, problem.id, WRONG_ANSWER_PENALTY_SECONDS)
       return
     end

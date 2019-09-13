@@ -29,6 +29,10 @@ class Problem < ApplicationRedis
     REDIS.setex(expire_key, seconds, "I'm alive")
   end
 
+  def remain_milliseconds
+    REDIS.pttl(expire_key)
+  end
+
   def timeout?
     !REDIS.exists(expire_key)
   end
