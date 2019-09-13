@@ -8,7 +8,7 @@ class ApplicationRedis
     end
 
     def delete
-        REDIS.del(self.class.name+id)
+        REDIS.del(self.class.name+id) == 1
     end
 
     def self.find!(key)
