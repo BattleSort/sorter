@@ -15,7 +15,7 @@ class RoomQueue
   # 有効なプレイヤーを返す。内部的には一旦取り出して、切断されていたらならキューの先頭に詰め直している。
   def get_players(player_number)
     players = player_number.times.map { REDIS.rpop(room_key) }
-    alives, deads = players.partition { |e|user_enabled?(e) }
+    alives, _deads = players.partition { |e|user_enabled?(e) }
     if alives.size != player_number
       alives.each { |e|REDIS.rpush(room_key, e) }
       nil
@@ -28,16 +28,16 @@ class RoomQueue
     REDIS.del(room_user_key(user_id))
   end
 
-    private
-      def room_user_key(user_id)
-        room_key+'-'+user_id
-      end
+  private
+    def room_user_key(user_id)
+      room_key+'-'+user_id
+    end
 
-      def enable_user(user_id)
-        REDIS.set(room_user_key(user_id), 'alive')
-      end
+    def enable_user(user_id)
+      REDIS.set(room_user_key(user_id), 'alive')
+    end
 
-      def user_enabled?(user_id)
-        REDIS.exists(room_user_key(user_id))
-      end
+    def user_enabled?(user_id)
+      REDIS.exists(room_user_key(user_id))
+    end
 end
