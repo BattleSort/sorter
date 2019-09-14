@@ -92,7 +92,8 @@ class RoomChannel < ApplicationCable::Channel
         problem.set_timeout TIMEOUT_SECONDS
         ActionCable.server.broadcast room_channel,
           problem: problem.to_client,
-          type: 'deliverProblem'
+          type: 'deliverProblem',
+          ttl_ms: problem.remain_milliseconds
       else
         ActionCable.server.broadcast room_channel,
           message: 'ゲーム終了です',
