@@ -46,7 +46,7 @@ class RoomChannel < ApplicationCable::Channel
       sleep NETWORK_DEFERRED_CONSIDERATION_SECONDS # to avoid timeouter delete probelem before winner do
       return unless problem.delete
       ActionCable.server.broadcast user_channel,
-        message: '正解者はいませんでした。',
+        message: '制限時間切れです',
         type: 'noWinner'
       return deliver_problem @room.pop_problem
     end
