@@ -3,14 +3,13 @@ class Problem < ApplicationRedis
 
   def self.create(name:, elements:, size:)
     indices = [*0..(elements.size-1)].sample(size).sort
-    p ordered_elements = elements.values_at(*indices)
-    answer = ordered_elements.join('|')
+    ordered_elements = elements.values_at(*indices)
     new(
       id: SecureRandom.uuid,
       name: name,
       right_elements: ordered_elements,
       elements: ordered_elements.shuffle,
-      answer: answer
+      answer: ordered_elements.join('|')
     ).save
   end
 
@@ -24,6 +23,18 @@ class Problem < ApplicationRedis
 
   def correct?(sub)
     answer == sub
+  end
+
+  def set_timeout(seconds)
+    REDIS.setex(expire_key, seconds, "I'm alive")
+  end
+
+  def remain_milliseconds
+    REDIS.pttl(expire_key)
+  end
+
+  def timeout?
+    !REDIS.exists(expire_key)
   end
 
   def push_solved_user(user_id, required_time)
@@ -40,5 +51,9 @@ class Problem < ApplicationRedis
   private
     def solved_user_key
       "solved-#{id}"
+    end
+
+    def expire_key
+      "problem-expire-#{id}"
     end
 end
